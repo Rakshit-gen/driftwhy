@@ -18,4 +18,12 @@ def check(ex: Explanation, events) -> tuple[Explanation, list[str]]:
     elif invented and not ex.evidence:
         notes.append("none of its evidence was real, so the verdict is set to unclear")
         ex = ex.model_copy(update={"verdict": "unclear", "confidence": "low"})
+    actors = {e.actor for e in events}
+    if ex.who not in actors and ex.who != "unknown":
+        # Accept "alice" for "user alice", but not a name that isn't in the events.
+        match = [a for a in actors if a.endswith((" " + ex.who, "/" + ex.who))]
+        real = match[0] if len(match) == 1 else (events[-1].actor if events else "unknown")
+        if not match:
+            notes.append(f"the model named {ex.who!r}, who is not in the events")
+        ex = ex.model_copy(update={"who": real})
     return ex, notes
