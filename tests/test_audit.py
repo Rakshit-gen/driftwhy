@@ -23,3 +23,16 @@ def test_actor_names():
     assert actor_of({"type": "AWSService", "invokedBy": "autoscaling.amazonaws.com"}) == (
         "autoscaling.amazonaws.com"
     )
+
+
+def test_reads_lookup_events_output(tmp_path):
+    records = json.load(open("examples/cloudtrail.json"))["Records"]
+    wrapped = {
+        "Events": [
+            {"EventId": r["eventID"], "EventName": r["eventName"], "CloudTrailEvent": json.dumps(r)}
+            for r in records
+        ]
+    }
+    p = tmp_path / "lookup.json"
+    p.write_text(json.dumps(wrapped))
+    assert [e.id for e in load_events(p)] == [e.id for e in load_events("examples/cloudtrail.json")]

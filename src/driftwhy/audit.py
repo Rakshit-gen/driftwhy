@@ -1,6 +1,10 @@
-"""Read a CloudTrail export: the `{"Records": [...]}` files CloudTrail writes
-to S3, the JSON array `aws cloudtrail lookup-events` style tools produce, or
-one event per line."""
+"""Read a CloudTrail export. Three shapes are accepted:
+
+- the `{"Records": [...]}` files a trail writes to S3
+- the output of `aws cloudtrail lookup-events`, where each event's record is a
+  JSON string in `CloudTrailEvent`
+- one record per line, or a plain JSON array of records
+"""
 
 import json
 from dataclasses import dataclass
@@ -59,7 +63,10 @@ def load_events(path) -> list[Event]:
         text = f.read()
     try:
         doc = json.loads(text)
-        records = doc.get("Records", []) if isinstance(doc, dict) else doc
+        if isinstance(doc, dict) and "Events" in doc:
+            records = [json.loads(e["CloudTrailEvent"]) for e in doc["Events"]]
+        else:
+            records = doc.get("Records", []) if isinstance(doc, dict) else doc
     except json.JSONDecodeError:
         records = [json.loads(line) for line in text.splitlines() if line.strip()]
     return sorted((parse_event(r) for r in records), key=lambda e: e.time)
