@@ -1,0 +1,111 @@
+{
+  "Records": [
+    {
+      "eventVersion": "1.09",
+      "eventID": "3f1c2a7e-0d4b-4c55-9a51-6c2f0e9b1a01",
+      "eventTime": "2026-10-09T09:12:40Z",
+      "eventSource": "sqs.amazonaws.com",
+      "eventName": "DeleteQueue",
+      "readOnly": false,
+      "userIdentity": {
+        "type": "AssumedRole",
+        "arn": "arn:aws:sts::123456789012:assumed-role/ci-deploy/github-actions"
+      },
+      "sourceIPAddress": "192.0.2.44",
+      "userAgent": "aws-cli/2.17.0",
+      "requestParameters": {
+        "queueUrl": "https://sqs.eu-west-1.amazonaws.com/123456789012/orders-retry"
+      }
+    },
+    {
+      "eventVersion": "1.09",
+      "eventID": "8b6d4f10-2c3e-4a8f-b7d2-1e9a5c3f7b02",
+      "eventTime": "2026-10-10T14:03:11Z",
+      "eventSource": "ec2.amazonaws.com",
+      "eventName": "AuthorizeSecurityGroupIngress",
+      "readOnly": false,
+      "userIdentity": {
+        "type": "IAMUser",
+        "arn": "arn:aws:iam::123456789012:user/alice",
+        "userName": "alice"
+      },
+      "sourceIPAddress": "203.0.113.7",
+      "userAgent": "console.ec2.amazonaws.com",
+      "requestParameters": {
+        "groupId": "sg-0a1b2c3d4e5f60718",
+        "ipPermissions": {
+          "items": [
+            {"ipProtocol": "tcp", "fromPort": 22, "toPort": 22,
+             "ipRanges": {"items": [{"cidrIp": "0.0.0.0/0"}]}}
+          ]
+        }
+      }
+    },
+    {
+      "eventVersion": "1.09",
+      "eventID": "c41a9e33-7f0b-4d1e-8a6c-5b2d9f0e3c03",
+      "eventTime": "2026-10-11T02:14:05Z",
+      "eventSource": "ec2.amazonaws.com",
+      "eventName": "DescribeInstances",
+      "readOnly": true,
+      "userIdentity": {
+        "type": "AssumedRole",
+        "arn": "arn:aws:sts::123456789012:assumed-role/oncall/priya"
+      },
+      "sourceIPAddress": "198.51.100.23",
+      "userAgent": "aws-cli/2.17.0",
+      "requestParameters": {"instancesSet": {"items": [{"instanceId": "i-0123456789abcdef0"}]}}
+    },
+    {
+      "eventVersion": "1.09",
+      "eventID": "d92b0c41-5e6a-4f7d-9c3b-2a8e1f4d6b04",
+      "eventTime": "2026-10-11T02:16:30Z",
+      "eventSource": "ec2.amazonaws.com",
+      "eventName": "ModifyInstanceAttribute",
+      "readOnly": false,
+      "userIdentity": {
+        "type": "AssumedRole",
+        "arn": "arn:aws:sts::123456789012:assumed-role/oncall/priya"
+      },
+      "sourceIPAddress": "198.51.100.23",
+      "userAgent": "aws-cli/2.17.0",
+      "requestParameters": {
+        "instanceId": "i-0123456789abcdef0",
+        "instanceType": {"value": "t3.large"}
+      }
+    },
+    {
+      "eventVersion": "1.09",
+      "eventID": "e05c1d52-6f7b-4a8e-8d4c-3b9f2a5e7c05",
+      "eventTime": "2026-10-11T02:17:02Z",
+      "eventSource": "ec2.amazonaws.com",
+      "eventName": "CreateTags",
+      "readOnly": false,
+      "userIdentity": {
+        "type": "AssumedRole",
+        "arn": "arn:aws:sts::123456789012:assumed-role/oncall/priya"
+      },
+      "sourceIPAddress": "198.51.100.23",
+      "userAgent": "aws-cli/2.17.0",
+      "requestParameters": {
+        "resourcesSet": {"items": [{"resourceId": "i-0123456789abcdef0"}]},
+        "tagSet": {"items": [{"key": "incident", "value": "INC-2291"}]}
+      }
+    },
+    {
+      "eventVersion": "1.09",
+      "eventID": "f16d2e63-7a8c-4b9f-9e5d-4c0a3b6f8d06",
+      "eventTime": "2026-10-11T03:40:00Z",
+      "eventSource": "s3.amazonaws.com",
+      "eventName": "PutBucketTagging",
+      "readOnly": false,
+      "userIdentity": {
+        "type": "AssumedRole",
+        "arn": "arn:aws:sts::123456789012:assumed-role/ci-deploy/github-actions"
+      },
+      "sourceIPAddress": "192.0.2.44",
+      "userAgent": "aws-cli/2.17.0",
+      "requestParameters": {"bucketName": "media-uploads"}
+    }
+  ]
+}
