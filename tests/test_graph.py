@@ -80,3 +80,20 @@ def test_review_rejects_a_bad_answer():
     app.invoke({"drift": DRIFT, "events": EVENTS, "items": []}, cfg)
     with pytest.raises(ValueError, match="keep, revert, skip"):
         app.invoke(Command(resume="yolo"), cfg)
+
+
+def test_only_the_latest_events_reach_the_model():
+    from dataclasses import replace
+
+    api = DRIFT[1]
+    base = [e for e in EVENTS if e.name == "ModifyInstanceAttribute"][0]
+    many = [replace(base, id=f"e{i:02d}") for i in range(30)]
+    seen = []
+
+    def explainer(d, c, r, ev):
+        seen.append([e.id for e in ev])
+        return rules_explain(d, c, r, ev)
+
+    (item,) = analyse_all([api], many, explainer, max_events=5)
+    assert seen == [["e25", "e26", "e27", "e28", "e29"]]
+    assert item.notes == ["25 earlier events were not shown to the model"]

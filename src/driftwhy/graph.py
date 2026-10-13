@@ -53,7 +53,7 @@ class Branch(TypedDict):
 DECISIONS = ("keep", "revert", "skip")
 
 
-def build_graph(explainer, checkpointer=None, review: bool = False):
+def build_graph(explainer, checkpointer=None, review: bool = False, max_events: int = 20):
     def fan_out(state: State):
         return [
             Send("analyse", {"index": i, "drift": d, "events": state["events"]})
@@ -65,7 +65,13 @@ def build_graph(explainer, checkpointer=None, review: bool = False):
         c = changes(d)
         r = risks(d, c)
         ev = events_for(d, b["events"])
+        cut = []
+        if len(ev) > max_events:
+            # Keep the prompt small: the latest changes are the ones that matter.
+            cut = [f"{len(ev) - max_events} earlier events were not shown to the model"]
+            ev = ev[-max_events:]
         ex, notes = check(explainer(d, c, r, ev), ev)
+        notes = cut + notes
         return {"items": [Item(b["index"], d, c, r, ev, ex, notes=notes)]}
 
     def collect(state: State):
@@ -103,6 +109,8 @@ def build_graph(explainer, checkpointer=None, review: bool = False):
     return g.compile(checkpointer=checkpointer)
 
 
-def analyse_all(drift: list[Drift], events: list[Event], explainer) -> list[Item]:
-    out = build_graph(explainer).invoke({"drift": drift, "events": events, "items": []})
+def analyse_all(drift: list[Drift], events: list[Event], explainer, max_events=20) -> list[Item]:
+    out = build_graph(explainer, max_events=max_events).invoke(
+        {"drift": drift, "events": events, "items": []}
+    )
     return sorted(out["items"], key=lambda it: it.index)

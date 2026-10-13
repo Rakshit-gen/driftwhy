@@ -25,10 +25,10 @@ SHORT = {
 }
 
 
-def review(drift, events, explainer, ask=None):
+def review(drift, events, explainer, ask=None, max_events=20):
     """Walk a person through each resource. Returns (items, decisions)."""
     ask = ask or input
-    app = build_graph(explainer, InMemorySaver(), review=True)
+    app = build_graph(explainer, InMemorySaver(), review=True, max_events=max_events)
     cfg = {"configurable": {"thread_id": "review"}}
     out = app.invoke({"drift": drift, "events": events, "items": []}, cfg)
     while "__interrupt__" in out:
@@ -71,6 +71,12 @@ def parser() -> argparse.ArgumentParser:
         choices=["any", "risk", "revert"],
         help="exit 1 if there is any drift, any risky drift, or anything to revert (for CI)",
     )
+    p.add_argument(
+        "--max-events",
+        type=int,
+        default=20,
+        help="latest audit events per resource to show the model (20)",
+    )
     p.add_argument("--review", action="store_true", help="decide on each resource, one by one")
     p.add_argument("--version", action="version", version=f"driftwhy {__version__}")
     return p
@@ -83,9 +89,9 @@ def main(argv: list[str] | None = None) -> int:
         events = sorted((e for path in args.audit for e in load_events(path)), key=lambda e: e.time)
         explainer = make_explainer(args.model)
         if args.review:
-            items, decisions = review(drift, events, explainer)
+            items, decisions = review(drift, events, explainer, max_events=args.max_events)
         else:
-            items, decisions = analyse_all(drift, events, explainer), None
+            items, decisions = analyse_all(drift, events, explainer, args.max_events), None
     except (DriftError, ValueError, OSError) as e:
         print(f"driftwhy: {e}", file=sys.stderr)
         return 2
