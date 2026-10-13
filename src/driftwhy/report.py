@@ -54,6 +54,8 @@ def item_lines(it, decisions=None) -> list[str]:
     when = f", {it.events[-1].time:%Y-%m-%d %H:%M} UTC" if it.events else ""
     out.append(f"  who:     {ex.who}{when}")
     out.append(f"  why:     {ex.why}")
+    for n in it.notes:
+        out.append(f"  note:    {n}")
     step = next_step(it, decision).replace("\n", "\n           ")
     out.append(f"  next:    {step}")
     return out

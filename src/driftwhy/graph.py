@@ -20,6 +20,7 @@ from .audit import Event
 from .diff import Change, changes
 from .drift import Drift
 from .explain import Explanation
+from .guard import check
 from .match import events_for
 from .risk import risks
 
@@ -64,7 +65,8 @@ def build_graph(explainer, checkpointer=None, review: bool = False):
         c = changes(d)
         r = risks(d, c)
         ev = events_for(d, b["events"])
-        return {"items": [Item(b["index"], d, c, r, ev, explainer(d, c, r, ev))]}
+        ex, notes = check(explainer(d, c, r, ev), ev)
+        return {"items": [Item(b["index"], d, c, r, ev, ex, notes=notes)]}
 
     def collect(state: State):
         return {}
