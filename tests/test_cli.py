@@ -55,3 +55,13 @@ def test_markdown_and_json(capsys):
     rows = json.loads(capsys.readouterr().out)
     assert [r["decision"] for r in rows] == ["revert", "unclear", "unclear", "revert"]
     assert rows[0]["changes"][0]["new"]["from_port"] == 22
+
+
+def test_fail_on(capsys, tmp_path):
+    assert main(ARGS + ["--fail-on", "risk"]) == 1
+    assert main(ARGS + ["--fail-on", "revert"]) == 1
+    calm = ["examples/drift.json", "--model", "rules", "--fail-on"]
+    assert main(calm + ["revert"]) == 0  # no audit log: nothing is suggested for revert
+    empty = tmp_path / "none.json"
+    empty.write_text('{"format_version": "1.2"}')
+    assert main([str(empty), "--model", "rules", "--fail-on", "any"]) == 0

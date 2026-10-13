@@ -11,7 +11,7 @@ from .audit import load_events
 from .drift import DriftError, load_drift
 from .graph import analyse_all, build_graph
 from .llm import make_explainer
-from .report import item_lines, json_report, markdown_report, text_report
+from .report import decision_of, item_lines, json_report, markdown_report, text_report
 
 FORMATS = {"text": text_report, "markdown": markdown_report, "json": json_report}
 
@@ -66,6 +66,11 @@ def parser() -> argparse.ArgumentParser:
         " is set, else rules)",
     )
     p.add_argument("-f", "--format", choices=FORMATS, default="text")
+    p.add_argument(
+        "--fail-on",
+        choices=["any", "risk", "revert"],
+        help="exit 1 if there is any drift, any risky drift, or anything to revert (for CI)",
+    )
     p.add_argument("--review", action="store_true", help="decide on each resource, one by one")
     p.add_argument("--version", action="version", version=f"driftwhy {__version__}")
     return p
@@ -88,7 +93,17 @@ def main(argv: list[str] | None = None) -> int:
         print("\nstopped; nothing was changed", file=sys.stderr)
         return 130
     print(FORMATS[args.format](items, decisions), end="")
-    return 0
+    return 1 if failed(args.fail_on, items, decisions) else 0
+
+
+def failed(rule: str | None, items, decisions) -> bool:
+    if rule == "any":
+        return bool(items)
+    if rule == "risk":
+        return any(it.risks for it in items)
+    if rule == "revert":
+        return any(decision_of(it, decisions)[0] == "revert" for it in items)
+    return False
 
 
 if __name__ == "__main__":
