@@ -11,7 +11,9 @@ from .audit import load_events
 from .drift import DriftError, load_drift
 from .graph import analyse_all, build_graph
 from .llm import make_explainer
-from .report import item_lines, text_report
+from .report import item_lines, json_report, markdown_report, text_report
+
+FORMATS = {"text": text_report, "markdown": markdown_report, "json": json_report}
 
 SHORT = {
     "k": "keep",
@@ -63,6 +65,7 @@ def parser() -> argparse.ArgumentParser:
         help="rules, or groq:<model id> (default: groq:openai/gpt-oss-120b when GROQ_API_KEY"
         " is set, else rules)",
     )
+    p.add_argument("-f", "--format", choices=FORMATS, default="text")
     p.add_argument("--review", action="store_true", help="decide on each resource, one by one")
     p.add_argument("--version", action="version", version=f"driftwhy {__version__}")
     return p
@@ -84,7 +87,7 @@ def main(argv: list[str] | None = None) -> int:
     except (KeyboardInterrupt, EOFError):
         print("\nstopped; nothing was changed", file=sys.stderr)
         return 130
-    print(text_report(items, decisions), end="")
+    print(FORMATS[args.format](items, decisions), end="")
     return 0
 
 

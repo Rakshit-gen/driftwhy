@@ -59,3 +59,47 @@ def item_lines(it, decisions=None) -> list[str]:
     step = next_step(it, decision).replace("\n", "\n           ")
     out.append(f"  next:    {step}")
     return out
+
+
+def markdown_report(items, decisions=None) -> str:
+    """A table and details, for a pull request or issue comment."""
+    if not items:
+        return "No drift: the infrastructure matches the Terraform state.\n"
+    out = [f"**{summary(items, decisions)}**", "", "| resource | decision | who | risk |"]
+    out.append("|---|---|---|---|")
+    for it in items:
+        decision, by_person = decision_of(it, decisions)
+        mark = decision if by_person else f"{decision} (suggested)"
+        risk = "; ".join(it.risks) or "-"
+        out.append(f"| `{it.drift.address}` | {mark} | {it.explanation.who} | {risk} |")
+    for it in items:
+        decision, _ = decision_of(it, decisions)
+        out += ["", f"<details><summary><code>{it.drift.address}</code></summary>", ""]
+        out += [f"- {change_line(c)}" for c in it.changes] or ["- deleted outside Terraform"]
+        out += ["", it.explanation.why, ""]
+        out += [f"> {n}" for n in it.notes]
+        out += ["```", next_step(it, decision), "```", "</details>"]
+    return "\n".join(out) + "\n"
+
+
+def json_report(items, decisions=None) -> str:
+    rows = []
+    for it in items:
+        decision, by_person = decision_of(it, decisions)
+        rows.append(
+            {
+                "address": it.drift.address,
+                "action": it.drift.action,
+                "decision": decision,
+                "decided_by_person": by_person,
+                "changes": [
+                    {"path": c.path, "kind": c.kind, "old": c.old, "new": c.new} for c in it.changes
+                ],
+                "risks": it.risks,
+                "explanation": it.explanation.model_dump(),
+                "events": [e.id for e in it.events],
+                "notes": it.notes,
+                "next_step": next_step(it, decision),
+            }
+        )
+    return json.dumps(rows, indent=2) + "\n"

@@ -41,3 +41,17 @@ def test_review_can_be_stopped(capsys, monkeypatch):
     monkeypatch.setattr("builtins.input", stop)
     assert main(ARGS + ["--review"]) == 130
     assert "nothing was changed" in capsys.readouterr().err
+
+
+def test_markdown_and_json(capsys):
+    import json
+
+    assert main(ARGS + ["-f", "markdown"]) == 0
+    md = capsys.readouterr().out
+    assert md.startswith("**4 resources drifted")
+    assert "| `aws_security_group.web` | revert (suggested) | user alice |" in md
+    assert md.count("<details>") == 4
+    assert main(ARGS + ["-f", "json"]) == 0
+    rows = json.loads(capsys.readouterr().out)
+    assert [r["decision"] for r in rows] == ["revert", "unclear", "unclear", "revert"]
+    assert rows[0]["changes"][0]["new"]["from_port"] == 22
