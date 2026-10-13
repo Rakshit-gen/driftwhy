@@ -1,0 +1,97 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.9.8",
+  "resource_drift": [
+    {
+      "address": "aws_security_group.web",
+      "mode": "managed",
+      "type": "aws_security_group",
+      "name": "web",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": ["update"],
+        "before": {
+          "id": "sg-0a1b2c3d4e5f60718",
+          "name": "web",
+          "ingress": [
+            {"from_port": 443, "to_port": 443, "protocol": "tcp", "cidr_blocks": ["0.0.0.0/0"], "description": "https"}
+          ],
+          "tags": {"team": "web"},
+          "tags_all": {"team": "web"}
+        },
+        "after": {
+          "id": "sg-0a1b2c3d4e5f60718",
+          "name": "web",
+          "ingress": [
+            {"from_port": 443, "to_port": 443, "protocol": "tcp", "cidr_blocks": ["0.0.0.0/0"], "description": "https"},
+            {"from_port": 22, "to_port": 22, "protocol": "tcp", "cidr_blocks": ["0.0.0.0/0"], "description": ""}
+          ],
+          "tags": {"team": "web"},
+          "tags_all": {"team": "web"}
+        }
+      }
+    },
+    {
+      "address": "aws_instance.api",
+      "mode": "managed",
+      "type": "aws_instance",
+      "name": "api",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": ["update"],
+        "before": {
+          "id": "i-0123456789abcdef0",
+          "instance_type": "t3.medium",
+          "tags": {"Name": "api"},
+          "tags_all": {"Name": "api"}
+        },
+        "after": {
+          "id": "i-0123456789abcdef0",
+          "instance_type": "t3.large",
+          "tags": {"Name": "api", "incident": "INC-2291"},
+          "tags_all": {"Name": "api", "incident": "INC-2291"}
+        }
+      }
+    },
+    {
+      "address": "aws_lambda_function.thumbnails",
+      "mode": "managed",
+      "type": "aws_lambda_function",
+      "name": "thumbnails",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": ["update"],
+        "before": {
+          "id": "thumbnails",
+          "function_name": "thumbnails",
+          "arn": "arn:aws:lambda:eu-west-1:123456789012:function:thumbnails",
+          "timeout": 30,
+          "memory_size": 512
+        },
+        "after": {
+          "id": "thumbnails",
+          "function_name": "thumbnails",
+          "arn": "arn:aws:lambda:eu-west-1:123456789012:function:thumbnails",
+          "timeout": 90,
+          "memory_size": 512
+        }
+      }
+    },
+    {
+      "address": "aws_sqs_queue.retry",
+      "mode": "managed",
+      "type": "aws_sqs_queue",
+      "name": "retry",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": ["delete"],
+        "before": {
+          "id": "https://sqs.eu-west-1.amazonaws.com/123456789012/orders-retry",
+          "name": "orders-retry",
+          "arn": "arn:aws:sqs:eu-west-1:123456789012:orders-retry"
+        },
+        "after": null
+      }
+    }
+  ]
+}
