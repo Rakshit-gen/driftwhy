@@ -1,9 +1,12 @@
 """The LangGraph workflow.
 
-    START --(one Send per drifted resource)--> analyse --> collect --> END
+    START --(one Send per drifted resource)--> analyse --> collect --> review --> END
 
 Each resource is analysed on its own branch, so a slow model call for one
-doesn't hold up the rest, and the branches run concurrently.
+doesn't hold up the rest, and the branches run concurrently. The review step
+is optional: it stops the graph once per resource and waits for a person to
+answer keep, revert or skip. That needs a checkpointer, so the graph can be
+resumed where it stopped.
 """
 
 import operator
@@ -11,7 +14,7 @@ from dataclasses import dataclass, field
 from typing import Annotated, TypedDict
 
 from langgraph.graph import END, START, StateGraph
-from langgraph.types import Send
+from langgraph.types import Send, interrupt
 
 from .audit import Event
 from .diff import Change, changes
@@ -37,6 +40,7 @@ class State(TypedDict, total=False):
     drift: list[Drift]
     events: list[Event]
     items: Annotated[list[Item], operator.add]
+    decisions: dict[int, str]  # item index -> what the reviewer chose
 
 
 class Branch(TypedDict):
@@ -45,7 +49,10 @@ class Branch(TypedDict):
     events: list[Event]
 
 
-def build_graph(explainer, checkpointer=None):
+DECISIONS = ("keep", "revert", "skip")
+
+
+def build_graph(explainer, checkpointer=None, review: bool = False):
     def fan_out(state: State):
         return [
             Send("analyse", {"index": i, "drift": d, "events": state["events"]})
@@ -62,12 +69,35 @@ def build_graph(explainer, checkpointer=None):
     def collect(state: State):
         return {}
 
+    def review_node(state: State):
+        # One interrupt per resource. On resume LangGraph replays this node and
+        # hands back the answers already given, in order.
+        decisions = {}
+        for it in sorted(state["items"], key=lambda it: it.index):
+            answer = interrupt(
+                {
+                    "address": it.drift.address,
+                    "verdict": it.explanation.verdict,
+                    "why": it.explanation.why,
+                    "risks": it.risks,
+                }
+            )
+            if answer not in DECISIONS:
+                raise ValueError(f"answer must be one of {', '.join(DECISIONS)}, got {answer!r}")
+            decisions[it.index] = answer
+        return {"decisions": decisions}
+
     g = StateGraph(State)
     g.add_node("analyse", analyse)
     g.add_node("collect", collect)
     g.add_conditional_edges(START, fan_out, ["analyse", "collect"])
     g.add_edge("analyse", "collect")
-    g.add_edge("collect", END)
+    if review:
+        g.add_node("review", review_node)
+        g.add_edge("collect", "review")
+        g.add_edge("review", END)
+    else:
+        g.add_edge("collect", END)
     return g.compile(checkpointer=checkpointer)
 
 

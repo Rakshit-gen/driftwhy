@@ -1,10 +1,13 @@
 import threading
 
+import pytest
 from fakes import ScriptedModel
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.types import Command
 
 from driftwhy.audit import load_events
 from driftwhy.drift import load_drift
-from driftwhy.graph import analyse_all
+from driftwhy.graph import analyse_all, build_graph
 from driftwhy.llm import ModelExplainer
 from driftwhy.rules import rules_explain
 
@@ -53,3 +56,27 @@ def test_with_a_model():
 
     items = analyse_all(DRIFT, EVENTS, explainer)
     assert [it.explanation.verdict for it in items] == ["revert", "keep", "unclear", "revert"]
+
+
+def test_review_stops_once_per_resource_and_records_answers():
+
+    app = build_graph(rules_explain, InMemorySaver(), review=True)
+    cfg = {"configurable": {"thread_id": "t1"}}
+    out = app.invoke({"drift": DRIFT, "events": EVENTS, "items": []}, cfg)
+    asked = []
+    while "__interrupt__" in out:
+        (question,) = out["__interrupt__"]
+        asked.append(question.value["address"])
+        answer = "keep" if question.value["address"] == "aws_instance.api" else "revert"
+        out = app.invoke(Command(resume=answer), cfg)
+    assert asked == [d.address for d in DRIFT]
+    assert out["decisions"] == {0: "revert", 1: "keep", 2: "revert", 3: "revert"}
+
+
+def test_review_rejects_a_bad_answer():
+
+    app = build_graph(rules_explain, InMemorySaver(), review=True)
+    cfg = {"configurable": {"thread_id": "t2"}}
+    app.invoke({"drift": DRIFT, "events": EVENTS, "items": []}, cfg)
+    with pytest.raises(ValueError, match="keep, revert, skip"):
+        app.invoke(Command(resume="yolo"), cfg)
